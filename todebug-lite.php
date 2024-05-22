@@ -4,7 +4,7 @@
  * Plugin Name: Todebug Lite
  * Plugin URI: https://github.com/byevhen2/todebug-lite
  * Description: A simple WordPress logger.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Requires at least: 4.8
  * Requires PHP: 7.0
  * Author: Biliavskyi Yevhen
@@ -96,13 +96,13 @@ class TodebugLiteLogger
 		static::separateRequestsOnce();
 
 		$time   = date('Y-m-d H:i:s');
-		$prefix = "[{$time}] ";
+		$prefix = "[{$time}]";
 
 		// Remove new line characters added by functions like var_dump().
 		$message = rtrim($message, PHP_EOL);
 
 		if (!empty($message)) {
-			file_put_contents($file, $prefix . $message . PHP_EOL, FILE_APPEND);
+			file_put_contents($file, static::prefixMessage($message, $prefix) . PHP_EOL, FILE_APPEND);
 		} else {
 			file_put_contents($file, PHP_EOL, FILE_APPEND);
 		}
@@ -113,7 +113,7 @@ class TodebugLiteLogger
 	 */
 	public static function logAjax(string $message)
 	{
-		static::log('[AJAX] ' . $message);
+		static::log(static::prefixMessage($message, '[AJAX]'));
 	}
 
 	/**
@@ -121,7 +121,7 @@ class TodebugLiteLogger
 	 */
 	public static function logCron(string $message)
 	{
-		static::log('[Cron] ' . $message);
+		static::log(static::prefixMessage($message, '[Cron]'));
 	}
 
 	/**
@@ -135,6 +135,16 @@ class TodebugLiteLogger
 			static::logCron($message);
 		} else {
 			static::log($message);
+		}
+	}
+
+	protected static function prefixMessage(string $message, string $prefix): string
+	{
+		if (!empty($message)) {
+			return $prefix . ' ' . $message;
+		} else {
+			// Don't add a prefix for empty lines.
+			return $message;
 		}
 	}
 
