@@ -17,6 +17,9 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
+/**
+ * @since 1.0.0
+ */
 class TodebugLiteLogger
 {
 	const LOG_DIR_NAME  = 'todebug';
@@ -25,9 +28,9 @@ class TodebugLiteLogger
 	/**
 	 * @var bool
 	 */
-	protected static $isRequestsSeparated = false;
+	private static $isRequestsSeparated = false;
 
-	protected static function getLogDir(): string
+	private static function getLogDir(): string
 	{
 		$uploads = wp_upload_dir();
 
@@ -35,12 +38,12 @@ class TodebugLiteLogger
 			. static::LOG_DIR_NAME . DIRECTORY_SEPARATOR;
 	}
 
-	protected static function getLogFile(): string
+	private static function getLogFile(): string
 	{
 		return static::getLogDir() . static::LOG_FILE_NAME;
 	}
 
-	protected static function createLogDir(): bool
+	private static function createLogDir(): bool
 	{
 		$dir = static::getLogDir();
 		$isDirCreated = wp_mkdir_p($dir);
@@ -59,10 +62,7 @@ class TodebugLiteLogger
 		return $isDirCreated;
 	}
 
-	/**
-	 * @return void
-	 */
-	protected static function createLogFile()
+	private static function createLogFile()
 	{
 		// Create directory?
 		if (!is_dir(static::getLogDir())) {
@@ -78,9 +78,6 @@ class TodebugLiteLogger
 		static::$isRequestsSeparated = true;
 	}
 
-	/**
-	 * @return void
-	 */
 	public static function log(string $message)
 	{
 		$file = static::getLogFile();
@@ -98,9 +95,6 @@ class TodebugLiteLogger
 		$time   = date('Y-m-d H:i:s');
 		$prefix = "[{$time}]";
 
-		// Remove new line characters added by functions like var_dump().
-		$message = rtrim($message, PHP_EOL);
-
 		if (!empty($message)) {
 			file_put_contents($file, static::prefixMessage($message, $prefix) . PHP_EOL, FILE_APPEND);
 		} else {
@@ -108,37 +102,31 @@ class TodebugLiteLogger
 		}
 	}
 
-	/**
-	 * @return void
-	 */
-	public static function logAjax(string $message)
+	public static function logAJAX(string $message)
 	{
 		static::log(static::prefixMessage($message, '[AJAX]'));
 	}
 
-	/**
-	 * @return void
-	 */
 	public static function logCron(string $message)
 	{
 		static::log(static::prefixMessage($message, '[Cron]'));
 	}
 
-	/**
-	 * @return void
-	 */
 	public static function logAuto(string $message)
 	{
-		if (wp_doing_ajax()) { // Requires WordPress 4.7.
-			static::logAjax($message);
-		} else if (wp_doing_cron()) { // Requires WordPress 4.8.
+		if (wp_doing_ajax()) { // Requires WordPress 4.7.0.
+			static::logAJAX($message);
+		} else if (wp_doing_cron()) { // Requires WordPress 4.8.0.
 			static::logCron($message);
 		} else {
 			static::log($message);
 		}
 	}
 
-	protected static function prefixMessage(string $message, string $prefix): string
+	/**
+	 * @since 1.0.2
+	 */
+	private static function prefixMessage(string $message, string $prefix): string
 	{
 		if (!empty($message)) {
 			return $prefix . ' ' . $message;
@@ -150,26 +138,30 @@ class TodebugLiteLogger
 
 	/**
 	 * Places a separator between messages of different requests.
-	 *
-	 * @return void
 	 */
-	protected static function separateRequestsOnce() {
+	private static function separateRequestsOnce()
+	{
 		if (!static::$isRequestsSeparated) {
-			$separator = PHP_EOL . '------------------------------' . PHP_EOL . PHP_EOL;
-
-			file_put_contents(static::getLogFile(), $separator, FILE_APPEND);
+			static::addSeparator();
 
 			static::$isRequestsSeparated = true;
 		}
 	}
 
-	protected static function getIndexPhpContent(): string
+	private static function addSeparator()
+	{
+		$separator = PHP_EOL . '------------------------------' . PHP_EOL . PHP_EOL;
+
+		file_put_contents(static::getLogFile(), $separator, FILE_APPEND);
+	}
+
+	private static function getIndexPhpContent(): string
 	{
 		return '<?php' . PHP_EOL
 			. '// Silence is golden.' . PHP_EOL;
 	}
 
-	protected static function getHtaccessContent(): string
+	private static function getHtaccessContent(): string
 	{
 		return 'Options -Indexes' . PHP_EOL
 			. 'deny from all' . PHP_EOL
@@ -222,7 +214,7 @@ class TodebugLiteLogger
 	 *     @param bool $args['strict'] Whether to wrap strings with "". True by
 	 *         default.
 	 */
-	protected static function toStringVar($var, $args = []): string
+	private static function toStringVar($var, $args = []): string
 	{
 		$args += [
 			'strict' => true,
@@ -240,13 +232,13 @@ class TodebugLiteLogger
 			$string = (string)$var;
 
 		} else if (is_float($var)) {
-			$string = number_format($var, 5, '.', '');
+			$string = number_format($var, 3, '.', '');
 
 		} else if (is_string($var)) {
-			$string = $var;
-
 			if ($args['strict']) {
-				$string = '"' . $string . '"';
+				$string = '"' . $var . '"';
+			} else {
+				$string = $var;
 			}
 
 		} else if (is_array($var)) {
@@ -266,7 +258,7 @@ class TodebugLiteLogger
 		return trim($string);
 	}
 
-	protected static function toStringArray(array $array): string
+	private static function toStringArray(array $array): string
 	{
 		$keys  = [];
 		$items = [];
@@ -312,7 +304,7 @@ if (!function_exists('todebug')) {
 	 *
 	 * @example <code>todebug('My message:', $var1, $var2)</code>
 	 *
-	 * @return void
+	 * @since 1.0.0
 	 */
 	function todebug(...$vars)
 	{
@@ -332,7 +324,7 @@ if (!function_exists('todebugs')) {
 	/**
 	 * Strict version of <code>todebug()</code> (wraps all strings in quotes "").
 	 *
-	 * @return void
+	 * @since 1.0.0
 	 */
 	function todebugs(...$vars)
 	{
@@ -352,7 +344,7 @@ if (!function_exists('todebugm')) {
 	/**
 	 * Treats all strings as messages and doesn't wrap strings in quotes "".
 	 *
-	 * @return void
+	 * @since 1.0.0
 	 */
 	function todebugm(...$vars)
 	{
