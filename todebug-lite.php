@@ -205,13 +205,15 @@ class TodebugLiteLogger
 	}
 
 	/**
+	 * @access private
+	 *
 	 * @param array $args Optional.
 	 *     @param bool $args['strict'] Whether to wrap strings with "". True by
 	 *         default.
 	 *     @param bool $args['skip_first'] Don't apply "strict" to the first
 	 *         parameter. True by default.
 	 */
-	public static function toString(array $vars, array $args = []): string
+	public static function varsToString(array $vars, array $args = []): string
 	{
 		$args += [
 			'strict'     => true,
@@ -226,12 +228,12 @@ class TodebugLiteLogger
 
 			if (is_string($var)) {
 				if ($args['strict'] && $args['skip_first'] && $i == 1) {
-					$string = static::toStringVar($var, ['strict' => false]);
+					$string = static::varToString($var, ['strict' => false]);
 				} else {
-					$string = static::toStringVar($var, $args);
+					$string = static::varToString($var, $args);
 				}
 			} else {
-				$string = static::toStringVar($var, $args);
+				$string = static::varToString($var, $args);
 			}
 
 			$strings[] = $string;
@@ -247,7 +249,7 @@ class TodebugLiteLogger
 	 *     @param bool $args['strict'] Whether to wrap strings with "". True by
 	 *         default.
 	 */
-	private static function toStringVar($var, $args = []): string
+	private static function varToString($var, array $args = []): string
 	{
 		$args += [
 			'strict' => true,
@@ -275,7 +277,7 @@ class TodebugLiteLogger
 			}
 
 		} else if (is_array($var)) {
-			$string = static::toStringArray($var);
+			$string = static::arrayToString($var);
 
 		} else if ($var instanceof DateTime) {
 			$string = $var->format(static::DATETIME_FORMAT_PUBLIC);
@@ -291,7 +293,7 @@ class TodebugLiteLogger
 		return trim($string);
 	}
 
-	private static function toStringArray(array $array): string
+	private static function arrayToString(array $array): string
 	{
 		$keys  = [];
 		$items = [];
@@ -301,12 +303,12 @@ class TodebugLiteLogger
 		$isNaturalIndexes = true;
 
 		foreach ($array as $key => $value) {
-			$items[] = static::toStringVar($value);
+			$items[] = static::varToString($value);
 
 			if ($key === $i) {
 				$keys[] = $i;
 			} else {
-				$keys[] = static::toStringVar($key);
+				$keys[] = static::varToString($key);
 				$isNaturalIndexes = false;
 			}
 
@@ -341,7 +343,7 @@ if (!function_exists('todebug')) {
 	 */
 	function todebug(...$vars)
 	{
-		$message = TodebugLiteLogger::toString(
+		$message = TodebugLiteLogger::varsToString(
 			$vars,
 			[
 				'strict'     => true,
@@ -361,7 +363,7 @@ if (!function_exists('todebugs')) {
 	 */
 	function todebugs(...$vars)
 	{
-		$message = TodebugLiteLogger::toString(
+		$message = TodebugLiteLogger::varsToString(
 			$vars,
 			[
 				'strict'     => true,
@@ -381,7 +383,7 @@ if (!function_exists('todebugm')) {
 	 */
 	function todebugm(...$vars)
 	{
-		$message = TodebugLiteLogger::toString(
+		$message = TodebugLiteLogger::varsToString(
 			$vars,
 			[
 				'strict'     => false,
