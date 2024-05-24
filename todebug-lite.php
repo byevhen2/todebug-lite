@@ -4,7 +4,7 @@
  * Plugin Name: Todebug Lite
  * Plugin URI: https://github.com/byevhen2/todebug-lite
  * Description: A simple WordPress logger.
- * Version: 1.0.2
+ * Version: 1.1.0
  * Requires at least: 4.8
  * Requires PHP: 7.0
  * Author: Biliavskyi Yevhen
@@ -25,9 +25,12 @@ class TodebugLiteLogger
 	const LOG_DIR_NAME  = 'todebug';
 	const LOG_FILE_NAME = 'todebug.log';
 
-	/**
-	 * @var bool
-	 */
+	/** @since 1.1.0 */
+	const DATETIME_FORMAT_LOG    = 'Y-m-d H:i:s';
+	/** @since 1.1.0 */
+	const DATETIME_FORMAT_PUBLIC = 'F j Y, H:i:s';
+
+	/** @var bool */
 	private static $isRequestsSeparated = false;
 
 	private static function getLogDir(): string
@@ -92,7 +95,7 @@ class TodebugLiteLogger
 
 		static::separateRequestsOnce();
 
-		$time   = date('Y-m-d H:i:s');
+		$time   = static::getCurrentTimeString('wp');
 		$prefix = "[{$time}]";
 
 		if (!empty($message)) {
@@ -137,6 +140,31 @@ class TodebugLiteLogger
 	}
 
 	/**
+	 * @since 1.1.0
+	 *
+	 * @param null|'wp'|string $timeZone Optional. Null by default (use the
+	 *     server's time zone).
+	 */
+	private static function getCurrentTimeString($timeZone = null): string
+	{
+		if (!is_null($timeZone)) {
+			if ($timeZone == 'wp') {
+				if ( function_exists('wp_timezone')) {
+					$timeZone = wp_timezone(); // Requires WordPress 5.3.0.
+				} else {
+					$timeZone = null;
+				}
+			} else {
+				$timeZone = new DateTimeZone($timeZone);
+			}
+		}
+
+		$now = new DateTime('now', $timeZone);
+
+		return $now->format(static::DATETIME_FORMAT_LOG);
+	}
+
+	/**
 	 * Places a separator between messages of different requests.
 	 */
 	private static function separateRequestsOnce()
@@ -148,6 +176,9 @@ class TodebugLiteLogger
 		}
 	}
 
+	/**
+	 * @since 1.1.0
+	 */
 	private static function addSeparator()
 	{
 		$separator = PHP_EOL . '------------------------------' . PHP_EOL . PHP_EOL;
@@ -245,7 +276,7 @@ class TodebugLiteLogger
 			$string = static::toStringArray($var);
 
 		} else if ($var instanceof DateTime) {
-			$string = $var->format('F j Y, H:i:s');
+			$string = $var->format(static::DATETIME_FORMAT_PUBLIC);
 			$string = '{' . $string . '}';
 
 		} else {
