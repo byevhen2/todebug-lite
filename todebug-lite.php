@@ -201,10 +201,19 @@ class TodebugLiteLogger
 
 	private static function getHtaccessContent(): string
 	{
+		return 'Order allow,deny' . PHP_EOL
+			. 'Deny from all' . PHP_EOL;
+	}
+
+	/**
+	 * @since 1.2.0
+	 */
+	private static function getHtaccessWithMediaContent(): string
+	{
 		return 'Options -Indexes' . PHP_EOL
-			. 'deny from all' . PHP_EOL
+			. 'Deny from all' . PHP_EOL
 			. "<FilesMatch '\.(jpg|jpeg|png|gif|mp3|ogg)$'>" . PHP_EOL
-				. "\tOrder Allow,Deny" . PHP_EOL
+				. "\tOrder allow,deny" . PHP_EOL
 				. "\tAllow from all" . PHP_EOL
 			. '</FilesMatch>' . PHP_EOL;
 	}
