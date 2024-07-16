@@ -100,7 +100,7 @@ class TodebugLiteLogger
 		$time   = static::getCurrentTimeString('wp');
 		$prefix = "[{$time}]";
 
-		if (!empty($message)) {
+		if ($message !== '') {
 			file_put_contents($file, static::prefixMessage($message, $prefix) . PHP_EOL, FILE_APPEND);
 		} else {
 			file_put_contents($file, PHP_EOL, FILE_APPEND);
@@ -136,7 +136,7 @@ class TodebugLiteLogger
 	 */
 	private static function prefixMessage(string $message, string $prefix): string
 	{
-		if (!empty($message)) {
+		if ($message !== '') {
 			return $prefix . ' ' . $message;
 		} else {
 			// Don't add a prefix for empty lines.
