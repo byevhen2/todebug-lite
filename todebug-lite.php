@@ -117,11 +117,14 @@ class TodebugLiteLogger
 		static::log(static::prefixMessage($message, '[Cron]'));
 	}
 
+	/**
+	 * @requires WordPress 4.8.0
+	 */
 	public static function logAuto(string $message)
 	{
-		if (wp_doing_ajax()) { // Requires WordPress 4.7.0.
+		if (wp_doing_ajax()) {
 			static::logAJAX($message);
-		} else if (wp_doing_cron()) { // Requires WordPress 4.8.0.
+		} else if (wp_doing_cron()) {
 			static::logCron($message);
 		} else {
 			static::log($message);
@@ -144,6 +147,8 @@ class TodebugLiteLogger
 	/**
 	 * @since 1.1.0
 	 *
+	 * @requires WordPress 5.3.0
+	 *
 	 * @param null|'wp'|string $timeZone Optional. Null by default (use the
 	 *     server's time zone).
 	 */
@@ -151,8 +156,8 @@ class TodebugLiteLogger
 	{
 		if (!is_null($timeZone)) {
 			if ($timeZone == 'wp') {
-				if ( function_exists('wp_timezone')) {
-					$timeZone = wp_timezone(); // Requires WordPress 5.3.0.
+				if (function_exists('wp_timezone')) {
+					$timeZone = wp_timezone();
 				} else {
 					$timeZone = null;
 				}
