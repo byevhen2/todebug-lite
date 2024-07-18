@@ -19,17 +19,12 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-/**
- * @since 1.0.0
- */
 class TodebugLiteLogger
 {
 	const LOG_DIR_NAME  = 'todebug';
 	const LOG_FILE_NAME = 'todebug.log';
 
-	/** @since 1.1.0 */
 	const DATETIME_FORMAT_LOG    = 'Y-m-d H:i:s';
-	/** @since 1.1.0 */
 	const DATETIME_FORMAT_PUBLIC = 'F j Y, H:i:s';
 
 	/** @var bool */
@@ -131,9 +126,6 @@ class TodebugLiteLogger
 		}
 	}
 
-	/**
-	 * @since 1.0.2
-	 */
 	private static function prefixMessage(string $message, string $prefix): string
 	{
 		if ($message !== '') {
@@ -145,8 +137,6 @@ class TodebugLiteLogger
 	}
 
 	/**
-	 * @since 1.1.0
-	 *
 	 * @requires WordPress 5.3.0
 	 *
 	 * @param null|'wp'|string $timeZone Optional. Null by default (use the
@@ -183,9 +173,6 @@ class TodebugLiteLogger
 		}
 	}
 
-	/**
-	 * @since 1.1.0
-	 */
 	private static function addSeparator()
 	{
 		$separator = PHP_EOL . '------------------------------' . PHP_EOL . PHP_EOL;
@@ -205,9 +192,6 @@ class TodebugLiteLogger
 			. 'Deny from all' . PHP_EOL;
 	}
 
-	/**
-	 * @since 1.2.0
-	 */
 	private static function getHtaccessWithMediaContent(): string
 	{
 		return 'Options -Indexes' . PHP_EOL
@@ -352,8 +336,6 @@ if (!function_exists('todebug')) {
 	 * quotes "".
 	 *
 	 * @example <code>todebug('My message:', $var1, $var2)</code>
-	 *
-	 * @since 1.0.0
 	 */
 	function todebug(...$vars)
 	{
@@ -372,8 +354,6 @@ if (!function_exists('todebug')) {
 if (!function_exists('todebugs')) {
 	/**
 	 * Strict version of <code>todebug()</code> (wraps all strings in quotes "").
-	 *
-	 * @since 1.0.0
 	 */
 	function todebugs(...$vars)
 	{
@@ -392,8 +372,6 @@ if (!function_exists('todebugs')) {
 if (!function_exists('todebugm')) {
 	/**
 	 * Treats all strings as messages and doesn't wrap strings in quotes "".
-	 *
-	 * @since 1.0.0
 	 */
 	function todebugm(...$vars)
 	{
