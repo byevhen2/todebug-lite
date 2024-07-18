@@ -27,20 +27,35 @@ class TodebugLiteLogger
 	const DATETIME_FORMAT_LOG    = 'Y-m-d H:i:s';
 	const DATETIME_FORMAT_PUBLIC = 'F j Y, H:i:s';
 
+	/** @var string */
+	private static $logDir = '';
+
+	/** @var string */
+	private static $logFile = '';
+
 	/** @var bool */
 	private static $isRequestsSeparated = false;
 
 	private static function getLogDir(): string
 	{
-		$uploads = wp_upload_dir();
+		if (static::$logDir == '') {
+			$uploads = wp_upload_dir();
+			$baseDir = $uploads['basedir'];
 
-		return $uploads['basedir'] . DIRECTORY_SEPARATOR
-			. static::LOG_DIR_NAME . DIRECTORY_SEPARATOR;
+			static::$logDir = $baseDir . DIRECTORY_SEPARATOR
+				. static::LOG_DIR_NAME . DIRECTORY_SEPARATOR;
+		}
+
+		return static::$logDir;
 	}
 
 	private static function getLogFile(): string
 	{
-		return static::getLogDir() . static::LOG_FILE_NAME;
+		if (static::$logFile == '') {
+			static::$logFile = static::getLogDir() . static::LOG_FILE_NAME;
+		}
+
+		return static::$logFile;
 	}
 
 	private static function createLogDir(): bool
