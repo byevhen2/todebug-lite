@@ -5,7 +5,7 @@
  * Plugin URI: https://github.com/byevhen2/todebug-lite
  * Description: A simple WordPress logger.
  * Version: 1.1.0
- * Requires at least: 4.8
+ * Requires at least: 5.0
  * Requires PHP: 7.0
  * Author: Biliavskyi Yevhen
  * Author URI: https://github.com/byevhen2
