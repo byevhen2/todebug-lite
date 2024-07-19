@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-class TodebugLiteLogger
+class TodebugLite
 {
 	const LOG_DIR_NAME  = 'todebug';
 	const LOG_FILE_NAME = 'todebug.log';
@@ -36,7 +36,7 @@ class TodebugLiteLogger
 	/** @var bool */
 	private static $isRequestsSeparated = false;
 
-	private static function getLogDir(): string
+	public static function getLogDir(): string
 	{
 		if (static::$logDir == '') {
 			$uploads = wp_upload_dir();
@@ -49,7 +49,7 @@ class TodebugLiteLogger
 		return static::$logDir;
 	}
 
-	private static function getLogFile(): string
+	public static function getLogFile(): string
 	{
 		if (static::$logFile == '') {
 			static::$logFile = static::getLogDir() . static::LOG_FILE_NAME;
@@ -61,36 +61,39 @@ class TodebugLiteLogger
 	private static function createLogDir(): bool
 	{
 		$dir = static::getLogDir();
+
 		$isDirCreated = wp_mkdir_p($dir);
 
 		if ($isDirCreated) {
 			// Add index.php and .htaccess files.
-			if (!file_exists($dir . 'index.php')) {
-				file_put_contents($dir . 'index.php', static::getIndexPhpContent());
-			}
-
-			if (!file_exists($dir . '.htaccess')) {
-				file_put_contents($dir . '.htaccess', static::getHtaccessContent());
-			}
+			static::writeToFile($dir . 'index.php', static::getIndexPhpContent());
+			static::writeToFile($dir . '.htaccess', static::getHtaccessContent());
 		}
 
 		return $isDirCreated;
 	}
 
-	private static function createLogFile()
+	private static function createLogFile(): bool
 	{
 		// Create directory?
 		if (!is_dir(static::getLogDir())) {
 			if (!static::createLogDir()) {
-				return;
+				return false;
 			}
 		}
 
 		// Create log file.
-		file_put_contents(static::getLogFile(), '');
+		static::writeToFile(static::getLogFile(), '');
 
 		// Nothing to separate in an empty file.
 		static::$isRequestsSeparated = true;
+
+		return true;
+	}
+
+	private static function writeToFile(string $file, string $message)
+	{
+		file_put_contents($file, $message, FILE_APPEND);
 	}
 
 	public static function log(string $message)
@@ -105,15 +108,15 @@ class TodebugLiteLogger
 			return;
 		}
 
-		static::separateRequestsOnce();
+		static::addRequestSeparator();
 
 		$time   = static::getCurrentTimeString('wp');
 		$prefix = "[{$time}]";
 
 		if ($message !== '') {
-			file_put_contents($file, static::prefixMessage($message, $prefix) . PHP_EOL, FILE_APPEND);
+			static::writeToFile($file, static::prefixMessage($message, $prefix) . PHP_EOL);
 		} else {
-			file_put_contents($file, PHP_EOL, FILE_APPEND);
+			static::writeToFile($file, PHP_EOL);
 		}
 	}
 
@@ -179,20 +182,14 @@ class TodebugLiteLogger
 	/**
 	 * Places a separator between messages of different requests.
 	 */
-	private static function separateRequestsOnce()
+	private static function addRequestSeparator()
 	{
 		if (!static::$isRequestsSeparated) {
-			static::addSeparator();
+			$separator = PHP_EOL . '------------------------------' . PHP_EOL . PHP_EOL;
 
+			static::writeToFile(static::getLogFile(), $separator);
 			static::$isRequestsSeparated = true;
 		}
-	}
-
-	private static function addSeparator()
-	{
-		$separator = PHP_EOL . '------------------------------' . PHP_EOL . PHP_EOL;
-
-		file_put_contents(static::getLogFile(), $separator, FILE_APPEND);
 	}
 
 	private static function getIndexPhpContent(): string
@@ -207,7 +204,7 @@ class TodebugLiteLogger
 			. 'Deny from all' . PHP_EOL;
 	}
 
-	private static function getHtaccessWithMediaContent(): string
+	private static function getHtaccessContentWithMedia(): string
 	{
 		return 'Options -Indexes' . PHP_EOL
 			. 'Deny from all' . PHP_EOL
