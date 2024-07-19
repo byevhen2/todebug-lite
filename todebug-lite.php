@@ -217,39 +217,42 @@ class TodebugLiteLogger
 			. '</FilesMatch>' . PHP_EOL;
 	}
 
-	/**
-	 * @access private
-	 *
-	 * @param array $args Optional.
-	 *     @param bool $args['strict'] Whether to wrap strings with "". True by
-	 *         default.
-	 *     @param bool $args['skip_first'] Don't apply "strict" to the first
-	 *         parameter. True by default.
-	 */
-	public static function varsToString(array $vars, array $args = []): string
+	public static function getType($var): string
 	{
-		$args += [
-			'strict'     => true,
-			'skip_first' => true,
-		];
+		$type = gettype($var);
 
-		$strings = [];
+		if ($type === 'NULL') {
+			return 'null';
+		} else if ($type == 'double') {
+			return 'float';
+		} else if (in_array($type, ['boolean', 'integer', 'string', 'array'])) {
+			return $type;
+		} else if ($var instanceof DateTime) {
+			return 'DateTime';
+		} else {
+			return 'mixed';
+		}
+	}
+
+	/**
+	 * @param true|false|'not first' $strict Whether to wrap all strings with "".
+	 */
+	public static function toString(array $vars, $strict = 'not first'): string
+	{
 		$i = 1;
+		$strings = [];
 
-		foreach($vars as $var) {
-			$string = '';
+		foreach ($vars as $var) {
+			$isStrict = $strict === true
+				// "not first" only works on the first string.
+				|| ($strict == 'not first' && ($i > 1 || !is_string($var)));
 
-			if (is_string($var)) {
-				if ($args['strict'] && $args['skip_first'] && $i == 1) {
-					$string = static::varToString($var, ['strict' => false]);
-				} else {
-					$string = static::varToString($var, $args);
-				}
-			} else {
-				$string = static::varToString($var, $args);
+			$type   = static::getType($var);
+			$string = static::toStringVar($var, $type, $isStrict);
+
+			if ($string !== '') {
+				$strings[] = $string;
 			}
-
-			$strings[] = $string;
 
 			$i++;
 		}
@@ -257,75 +260,76 @@ class TodebugLiteLogger
 		return implode(' ', $strings);
 	}
 
-	/**
-	 * @param array $args Optional.
-	 *     @param bool $args['strict'] Whether to wrap strings with "". True by
-	 *         default.
-	 */
-	private static function varToString($var, array $args = []): string
+	private static function toStringVar($var, string $type, bool $isStrict = true): string
 	{
-		$args += [
-			'strict' => true,
-		];
-
 		$string = '';
 
-		if (is_null($var)) {
-			$string = 'null';
+		switch ($type) {
+			case 'null':
+				$string = 'null';
+				break;
 
-		} else if (is_bool($var)) {
-			$string = $var ? 'true' : 'false';
+			case 'boolean':
+				$string = $var ? 'true' : 'false';
+				break;
 
-		} else if (is_int($var)) {
-			$string = (string)$var;
+			case 'integer':
+				$string = (string)$var;
+				break;
 
-		} else if (is_float($var)) {
-			$string = number_format($var, 3, '.', '');
+			case 'float':
+				$string = number_format($var, 3, '.', '');
+				break;
 
-		} else if (is_string($var)) {
-			if ($args['strict']) {
-				$string = '"' . $var . '"';
-			} else {
-				$string = $var;
-			}
+			case 'string':
+				if ($isStrict) {
+					$string = '"' . $var . '"';
+				} else {
+					$string = $var;
+				}
+				break;
 
-		} else if (is_array($var)) {
-			$string = static::arrayToString($var);
+			case 'array':
+				$string = static::toStringArray($var);
+				break;
 
-		} else if ($var instanceof DateTime) {
-			$string = $var->format(static::DATETIME_FORMAT_PUBLIC);
-			$string = '{' . $string . '}';
+			case 'DateTime':
+				$string = '{' . $var->format(static::DATETIME_FORMAT_PUBLIC) . '}';
+				break;
 
-		} else {
-			ob_start();
-			var_dump($var);
-			$string = ob_get_clean();
-			$string = rtrim($string, PHP_EOL);
+			case 'mixed':
+			default:
+				ob_start();
+					var_dump($var);
+				$string = ob_get_clean();
+
+				$string = rtrim($string, PHP_EOL);
+
+				break;
 		}
 
 		return trim($string);
 	}
 
-	private static function arrayToString(array $array): string
+	private static function toStringArray(array $array): string
 	{
 		$keys  = [];
 		$items = [];
 
-		$i = 0;
-
+		$index = 0;
 		$isNaturalIndexes = true;
 
 		foreach ($array as $key => $value) {
-			$items[] = static::varToString($value);
+			$items[] = static::toStringVar($value, static::getType($value));
 
-			if ($key === $i) {
-				$keys[] = $i;
+			if ($key === $index) {
+				$keys[] = $index;
 			} else {
-				$keys[] = static::varToString($key);
+				$keys[] = static::toStringVar($key, static::getType($key));
 				$isNaturalIndexes = false;
 			}
 
-			$i++;
+			$index++;
 		}
 
 		if ($isNaturalIndexes) {
@@ -345,59 +349,34 @@ class TodebugLiteLogger
 	}
 }
 
-if (!function_exists('todebug')) {
-	/**
-	 * Similar to <code>todebugs()</code>, but doesn't wrap the first string in
-	 * quotes "".
-	 *
-	 * @example <code>todebug('My message:', $var1, $var2)</code>
-	 */
-	function todebug(...$vars)
-	{
-		$message = TodebugLiteLogger::varsToString(
-			$vars,
-			[
-				'strict'     => true,
-				'skip_first' => true,
-			]
-		);
+/**
+ * Similar to `todebugs()`, but doesn't wrap the first string in quotes `""`.
+ *
+ * @example `todebug('My message:', $var1, $var2)`
+ */
+function todebug(...$vars)
+{
+	$message = TodebugLite::toString($vars, 'not first');
 
-		TodebugLiteLogger::logAuto($message);
-	}
+	TodebugLite::logAuto($message);
 }
 
-if (!function_exists('todebugs')) {
-	/**
-	 * Strict version of <code>todebug()</code> (wraps all strings in quotes "").
-	 */
-	function todebugs(...$vars)
-	{
-		$message = TodebugLiteLogger::varsToString(
-			$vars,
-			[
-				'strict'     => true,
-				'skip_first' => false,
-			]
-		);
+/**
+ * Strict version of `todebug()` (wraps all strings in quotes `""`).
+ */
+function todebugs(...$vars)
+{
+	$message = TodebugLite::toString($vars, true);
 
-		TodebugLiteLogger::logAuto($message);
-	}
+	TodebugLite::logAuto($message);
 }
 
-if (!function_exists('todebugm')) {
-	/**
-	 * Treats all strings as messages and doesn't wrap strings in quotes "".
-	 */
-	function todebugm(...$vars)
-	{
-		$message = TodebugLiteLogger::varsToString(
-			$vars,
-			[
-				'strict'     => false,
-				'skip_first' => true,
-			]
-		);
+/**
+ * Treats all strings as messages and doesn't wrap them in quotes `""`.
+ */
+function todebugm(...$vars)
+{
+	$message = TodebugLite::toString($vars, false);
 
-		TodebugLiteLogger::logAuto($message);
-	}
+	TodebugLite::logAuto($message);
 }
